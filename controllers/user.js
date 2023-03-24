@@ -1,11 +1,12 @@
 //IMPORTAR MODELOS
-const user = require("../models/user");
+const User = require("../models/user");
 
 //IMPORTAR HELPERS
 const validate = require("../helpers/validate");
+const bcrypt = require("bcrypt");
 
 //RUTA DE PRUEBA
-const probando = (req, res) =>{
+const probando = (req, res) => {
     return res.status(200).send({
         status: "success",
         message: "Mensaje enviado desde: controllers/user.js"
@@ -13,13 +14,13 @@ const probando = (req, res) =>{
 }
 
 //REGISTRAR USUARIOS /////////////////////////////////////////////////////////////
-const register = (req, res) =>{
+const register = async (req, res) => {
 
     //Recoger los datos de la peticion
     const params = req.body;
 
     //comprobar que me llegan bien
-    if(!params.name || !params.nick || !params.email || !params.password){
+    if (!params.name || !params.nick || !params.email || !params.password) {
         return res.status(400).send({
             status: "error",
             message: "Faltan datos por ingresar"
@@ -36,22 +37,58 @@ const register = (req, res) =>{
         });
     }
 
+
     //control usuarios duplicados
 
-    //cifrar la contraseña
+    try {
+        const findUser = await User.find({
+            $or: [
+                { email: params.email.toLowerCase() }, //Validando que no exista otro email en la bd igual
+                { nick: params.nick.toLowerCase() }, //Validando que no exista otro nick en la bd igual
+            ],
+        });
 
-    //crear objeto del ususario
+        if (findUser.length >= 1) {
+            return res.status(400).send({
+                status: "Error",
+                message: "El usuario ya existe",
+            });
+        } else {
+            //cifrar la contraseña
+            const pwd =  await bcrypt.hash(params.password, 10);
+            params.password = pwd;
 
-    //guardar usuario en la bbdd
+            //crear objeto del ususario
+            const newUser = new User(params);
 
-    //limpiar el objeto a devolver
+            //guardar usuario en la bbdd
+            try {
+                const userSaved = await newUser.save();
 
-    //devolver un resultado
-    return res.status(200).send({
-        status: "success",
-        message: "Usuario Registrado con exito",
-        params
-    });
+                //limpiar el objeto a devolver
+
+                //Devolver Resultado
+                return res.status(200).send({
+                    status: "sucess",
+                    message: "Usuario registrado con exito",
+                    user: userSaved
+                });
+
+            } catch (error) {
+                return res.status(400).send({
+                    status: "error",
+                    message: "No se pudo registrar el usuario",
+                    error
+                });
+            }
+        }
+
+    } catch (error) {
+        console.log(error);
+        throw new Error("Error al consultar si el usuatrio existe en la BBDD");
+
+    }
+
 }
 
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
