@@ -7,9 +7,12 @@ const router = express.Router();
 //IMPORTAR CONTROLADOR
 const userController = require("../controllers/user");
 
-//DEFINIR RUTAS
+//RUTA DE PRUEBA
 router.get("/prueba-user", userController.probando);
+
+//RUTAS REALES
 router.post("/register", userController.register);
+router.get("/login", userController.login);
 
 //EXPORTAR ROUTER
 module.exports = router;
