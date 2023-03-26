@@ -110,7 +110,9 @@ const login = (req, res) => {
 
     try {
 
-        User.findOne({ email: params.email }).then(async(findUser) => {
+        User.findOne({ email: params.email })
+        .select("+password")
+        .then(async (findUser) => {
             if (!findUser || findUser == null) {
                 return res.status(500).send({
                     status: "error",
@@ -118,25 +120,25 @@ const login = (req, res) => {
                 });
             }
 
-         //comprobar que la contraseña sea correcta
-        let pwd = await bcrypt.compareSync(params.password, findUser.password);
-      
-        if(!pwd){
-            return res.status(400).send({
-                status: "error",
-                message: "Contraseña Invalida"
-            });
-        }
+            //comprobar que la contraseña sea correcta
+            let pwd = await bcrypt.compareSync(params.password, findUser.password);
 
-        //Limpiar objetos
-        let loginUser = findUser.toObject();
-        delete loginUser.password;
-        delete loginUser.role;
+            if (!pwd) {
+                return res.status(400).send({
+                    status: "error",
+                    message: "Contraseña Invalida"
+                });
+            }
 
-        //conseguir el token jwt (crear un servicio que permita crear el token)
-        const token = jwt.createToken(findUser);
+            //Limpiar objetos
+            let loginUser = findUser.toObject();
+            delete loginUser.password;
+            delete loginUser.role;
 
-        //Devolver datos del usuasrio y el token
+            //conseguir el token jwt (crear un servicio que permita crear el token)
+            const token = jwt.createToken(findUser);
+
+            //Devolver datos del usuasrio y el token
 
 
             return res.status(200).send({
@@ -145,6 +147,7 @@ const login = (req, res) => {
                 loginUser,
                 token: token
             });
+
 
         });
 
@@ -155,44 +158,44 @@ const login = (req, res) => {
         });
     }
 
+}
 
-    //Buscar en la BBDD si existe el email
-    // try {
-    //     const emailExist= await User.findOne({ email: params.email });
+//PERFIL DE USUARIOS *******************************************************************************
+const profile = async (req, res) => {
 
-    //     if (!findEmail || findEmail.length == 0) {
-    //         return res.status(400).send({
-    //             status: "error",
-    //             message: "El Email no esta registrado"
-    //         });
-    //     }
+    //recoger el del usuario por la ruta
+    const id = req.params.id;
 
-    //     //comprobar que la contraseña sea correcta
+    //buscar el ususario en le BBDD
+    try {
+        await User.findById(id).then((user) => {
 
-    //     //conseguir el token jwt (crear un servicio que permita crear el token)
+            // devolver un resultado
+            return res.status(200).send({
+                status: "sucess",
+                message: "Perfil del Usuario",
+                user,
+                userIdentity: req.user
+            });
 
+        });
+    } catch (error) {
 
-    //     //Devolver datos del usuasrio y el token
+        return res.status(404).send({
+            status: "error",
+            message: "Usuario no encontrado en la BBDD"
+        });
 
-    //     return res.status(200).send({
-    //         status: "sucess",
-    //         message: "Usuario Logueado Correctamente",
-    //         login: params,
-    //         emailExist
-    //     });
-    // } catch (error) {
-    //     throw new Error (error);
-    // }
-
-
-
-
+    }
 
 }
+
+
 
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
 module.exports = {
     probando,
     register,
-    login
+    login,
+    profile
 }

@@ -7,12 +7,16 @@ const router = express.Router();
 //IMPORTAR CONTROLADOR
 const userController = require("../controllers/user");
 
+//IMPORTAR MIDDLEWARES
+const authorization = require("../middlewares/auth");
+
 //RUTA DE PRUEBA
 router.get("/prueba-user", userController.probando);
 
 //RUTAS REALES
 router.post("/register", userController.register);
 router.get("/login", userController.login);
+router.get("/profile/:id", authorization.auth, userController.profile);
 
 //EXPORTAR ROUTER
 module.exports = router;
