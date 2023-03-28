@@ -17,6 +17,7 @@ router.get("/prueba-user", userController.probando);
 router.post("/register", userController.register);
 router.get("/login", userController.login);
 router.get("/profile/:id", authorization.auth, userController.profile);
+router.put("/update", authorization.auth, userController.update);
 
 //EXPORTAR ROUTER
 module.exports = router;

@@ -111,45 +111,45 @@ const login = (req, res) => {
     try {
 
         User.findOne({ email: params.email })
-        .select("+password")
-        .then(async (findUser) => {
-            if (!findUser || findUser == null) {
-                return res.status(500).send({
-                    status: "error",
-                    message: "Correo Invalido.."
+            .select("+password")
+            .then(async (findUser) => {
+                if (!findUser || findUser == null) {
+                    return res.status(500).send({
+                        status: "error",
+                        message: "Correo Invalido.."
+                    });
+                }
+
+                //comprobar que la contraseña sea correcta
+                let pwd = await bcrypt.compareSync(params.password, findUser.password);
+
+                if (!pwd) {
+                    return res.status(400).send({
+                        status: "error",
+                        message: "Contraseña Invalida"
+                    });
+                }
+
+                //Limpiar objetos
+                let loginUser = findUser.toObject();
+                delete loginUser.password;
+                delete loginUser.role;
+
+                //conseguir el token jwt (crear un servicio que permita crear el token)
+                const token = jwt.createToken(findUser);
+
+                //Devolver datos del usuasrio y el token
+
+
+                return res.status(200).send({
+                    status: "sucess",
+                    message: "Usuario Logueado Correctamente",
+                    loginUser,
+                    token: token
                 });
-            }
-
-            //comprobar que la contraseña sea correcta
-            let pwd = await bcrypt.compareSync(params.password, findUser.password);
-
-            if (!pwd) {
-                return res.status(400).send({
-                    status: "error",
-                    message: "Contraseña Invalida"
-                });
-            }
-
-            //Limpiar objetos
-            let loginUser = findUser.toObject();
-            delete loginUser.password;
-            delete loginUser.role;
-
-            //conseguir el token jwt (crear un servicio que permita crear el token)
-            const token = jwt.createToken(findUser);
-
-            //Devolver datos del usuasrio y el token
 
 
-            return res.status(200).send({
-                status: "sucess",
-                message: "Usuario Logueado Correctamente",
-                loginUser,
-                token: token
             });
-
-
-        });
 
     } catch (error) {
         return res.status(404).send({
@@ -187,7 +187,88 @@ const profile = async (req, res) => {
         });
 
     }
+}
 
+
+//ACTUALIZAR USUARIOS *******************************************************************************
+const update = async (req, res) => {
+
+    //recoger datos del usuario identificado
+    let userIdentity = req.user;
+
+    //recoger datos a actualizar
+    let userToUpdate = req.body;
+
+    //comprobar si el usuario existe
+    try {
+
+        await User.find({
+            $or: [
+                { email: userToUpdate.email.toLowerCase() },
+                { nick: userToUpdate.nick.toLowerCase() }
+            ]
+        }).then(async (users) => {
+
+            if (!users || users.length == 0) {
+                return res.status(400).send({
+                    status: "error",
+                    message: "Error el Nick o email ingresados no existen en la bbdd"
+                });
+            }
+            users.forEach(async (user) => {
+
+                if (user._id != userIdentity.id) {
+
+                    // si ya existe devuelvo una respuesta   
+                    return res.status(404).send({
+                        status: "error",
+                        message: "Usuario ya existe en la BBDD"
+                    });
+                }
+
+                //cifrar contraseña si me llegara y si no borrarla
+                if (userToUpdate.password) {
+                    let pwd = await bcrypt.hash(userToUpdate.password, 10);
+                    userToUpdate.password = pwd;
+                } else {
+                    delete userToUpdate.password;
+                }
+
+                //buscar y actualizar
+                try {
+                    let userUpdated = await User.findByIdAndUpdate({ _id: userIdentity.id }, userToUpdate, { new: true });
+                    if (!userUpdated) {
+                        return res.status(400).send({
+                            status: "error",
+                            message: "Error al actualizar el ususario"
+                        });
+                    }
+                    // devolver un resultado
+                    return res.status(200).send({
+                        status: "sucess",
+                        message: "Usuario actualizado correctamente",
+                        userIdentity,
+                        userUpdated
+                    });
+                } catch (error) {
+                    return res.status(400).send({
+                        status: "error",
+                        message: "Error al Intentar actualizar el ususario",
+                        error
+                    });
+                }
+
+            });
+
+        });
+
+    } catch (error) {
+        return res.status(404).send({
+            status: "error",
+            message: "Error en la consulta de usuario en la BBDD",
+            error
+        });
+    }
 }
 
 
@@ -197,5 +278,6 @@ module.exports = {
     probando,
     register,
     login,
-    profile
+    profile,
+    update
 }

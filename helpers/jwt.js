@@ -9,7 +9,8 @@ const secret = "API_SECRET_APP_MUSIC_Alex_112544548163333_IronMaIden";
 const createToken = (user) =>{
 
     const payload = {
-        name: user._id,
+        id: user._id,
+        name: user.name,
         surname: user.surname,
         nick: user.nick,
         email: user.email,
