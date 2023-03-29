@@ -6,6 +6,12 @@ const validate = require("../helpers/validate");
 const bcrypt = require("bcrypt");
 const jwt = require("../helpers/jwt");
 
+const fs = require("fs");
+
+
+
+
+
 //RUTA DE PRUEBA
 const probando = (req, res) => {
     return res.status(200).send({
@@ -272,6 +278,63 @@ const update = async (req, res) => {
 }
 
 
+//SUBIDA MULTIMEDIA *******************************************************************************
+const upload = async (req, res) => {
+
+    //configuracion de subida (multer)
+
+    //recoger fichero de imagen y comprobar si existe
+    if (!req.file) {
+        return res.status(400).send({
+            status: "error",
+            message: "Archivo multimedia vacio, por favor adjunte archivo"
+        });
+    }
+
+    //conseguir el nombre del archivo
+    let nameImage = req.file.originalname;
+
+    //sacar info de la imagen
+    const imageSplit = nameImage.split("\.");
+    const extension = imageSplit[1];
+
+    //Comprobar si la extension es valida
+    if (extension != "jpg" && extension != "png" && extension != "jpeg" && extension != "gif") {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).send({
+            status: "error",
+            message: "extension del Archivo Multimedia invalido"
+        });
+    }
+    //si es correcto guardar la imagen en la bbdd
+    try {
+        const userUpsateImage = await User.findOneAndUpdate({ _id: req.user.id }, { image: req.file.filename }, { new: true });
+
+        if (!userUpsateImage) {
+            return res.status(400).send({
+                status: "error",
+                message: "Error al Intentar subir archivo multimedia"
+            });
+        }
+        
+        //Devolver Resultado
+        return res.status(200).send({
+            status: "success",
+            message: "Archivo Multimedia subid correctamente",
+            userUpsateImage
+        });
+    } catch (error) {
+        return res.status(400).send({
+            status: "error",
+            message: "Error al subir multimedia",
+            error
+        });
+    }
+
+}
+
+
+
 
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
 module.exports = {
@@ -279,5 +342,6 @@ module.exports = {
     register,
     login,
     profile,
-    update
+    update,
+    upload
 }
