@@ -33,6 +33,7 @@ router.get("/login", userController.login);
 router.get("/profile/:id", authorization.auth, userController.profile);
 router.put("/update", authorization.auth, userController.update);
 router.post("/upload", [authorization.auth, uploads.single("file0")], userController.upload);
+router.get("/avatar/:file", userController.avatar);
 
 //EXPORTAR ROUTER
 module.exports = router;

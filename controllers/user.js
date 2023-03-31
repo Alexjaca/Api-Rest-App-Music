@@ -7,6 +7,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("../helpers/jwt");
 
 const fs = require("fs");
+const path = require("path");
 
 
 
@@ -316,11 +317,11 @@ const upload = async (req, res) => {
                 message: "Error al Intentar subir archivo multimedia"
             });
         }
-        
+
         //Devolver Resultado
         return res.status(200).send({
             status: "success",
-            message: "Archivo Multimedia subid correctamente",
+            message: "Archivo Multimedia subido correctamente",
             userUpsateImage
         });
     } catch (error) {
@@ -330,10 +331,34 @@ const upload = async (req, res) => {
             error
         });
     }
-
 }
 
 
+//SACAR AVATAR *******************************************************************************
+const avatar = async (req, res) => {
+
+    //sacar el parametro de la url
+    const file = req.params.file;
+
+    //Montar el path real de la imagen
+    const filePath = "./uploads/multimedia/" + file;
+
+    //Comprobar que existe el fichero
+    fs.stat(filePath, (error, exist) =>{
+        if(error || !exist){
+            return res.status(400).send({
+                status: "error",
+                message: "Error al intentar buscar el archivo en la BBDD",
+                error
+            });
+        }
+
+        //Devolvemo el archivo
+        return res.sendFile(path.resolve(filePath));
+
+    });
+
+}
 
 
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
@@ -343,5 +368,6 @@ module.exports = {
     login,
     profile,
     update,
-    upload
+    upload,
+    avatar
 }
