@@ -1,5 +1,7 @@
 //IMPORTAR MODELO
 const Artist = require("../models/artist");
+const Album = require("../models/album");
+const Song = require("../models/song");
 
 //
 const pagination = require("mongoose-pagination");
@@ -177,14 +179,17 @@ const remove = async (req, res) => {
     try {
         const artistRemoved = await Artist.findByIdAndDelete(id);
         //remove albuns
-
+        const albumsRemoved = await Album.find({artist: id}).remove();
         //remove songs
+        const songsRemoved = await Song.find({album: albumsRemoved._id}).remove();
 
         //devolver el resultado
         res.status(200).send({
             status: "success",
             message: "Artista eliminado con exito",
-            artistRemoved
+            artistRemoved,
+            albumsRemoved,
+            songsRemoved
         });
     } catch (error) {
         res.status(404).send({
