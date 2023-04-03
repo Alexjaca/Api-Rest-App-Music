@@ -16,6 +16,8 @@ router.get("/prueba-artist", artistController.probando);
 
 //RUTAS REALES
 router.post("/register", authorization.auth, artistController.save);
+router.get("/one/:id", authorization.auth, artistController.one);
+router.get("/list/:page?", authorization.auth, artistController.list);
 
 
 

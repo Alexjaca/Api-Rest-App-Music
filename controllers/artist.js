@@ -1,6 +1,9 @@
 //IMPORTAR MODELO
 const Artist = require("../models/artist");
 
+//
+const pagination = require("mongoose-pagination");
+const paginatev2 = require("mongoose-paginate-v2");
 
 //RUTA DE PRUEBA
 const probando = (req, res) => {
@@ -63,11 +66,74 @@ const save = async (req, res) => {
 }
 
 
+//SACAR ARTISTA *************************************************************************
+const one = async (req, res) => {
+    //sacar parametros de la url
+    const id = req.params.id;
 
+    //find
+    try {
+        await Artist.findById(id).then((artist) => {
+            res.status(200).send({
+                status: "success",
+                artist
+            });
+        });
+    } catch (error) {
+        res.status(404).send({
+            status: "error",
+            message: "Error al buscar el artista",
+            error
+        });
+    }
+}
+
+//LISTAR ARTISTAS *************************************************************************
+const list = async(req, res) => {
+
+    //recibir pagina si existe
+    let page = 1;
+
+    if (req.params.page) {
+        page = req.params.page;
+    }
+
+    //definir numero de items por pagina
+    const itemsPerPage = 2;
+
+    //hacer Find, ordenar y paginar
+    try {
+        let findArtists = await Artist.find(); 
+        let total = findArtists.length; //guardando longitud de consulta
+                        
+        let skip = (page - 1) * itemsPerPage; //saldo de la pagina para la paginacion
+        await Artist.find().sort("name").skip(skip).limit(itemsPerPage).then((artists)=>{
+                      
+                res.status(200).send({
+                    status: "success",
+                    artists,
+                    page,
+                    itemsPerPage,
+                    total,
+                    pages: Math.ceil(total/itemsPerPage)
+                }); 
+         });
+
+    } catch (error) {
+        res.status(404).send({
+            status: "error",
+            message: "Error al buscar listado de artistas",
+            error
+        })
+    }
+ 
+}
 
 
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
 module.exports = {
     probando,
-    save
+    save,
+    one,
+    list
 }
