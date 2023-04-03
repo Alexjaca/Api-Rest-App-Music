@@ -309,9 +309,9 @@ const upload = async (req, res) => {
     }
     //si es correcto guardar la imagen en la bbdd
     try {
-        const userUpsateImage = await User.findOneAndUpdate({ _id: req.user.id }, { image: req.file.filename }, { new: true });
+        const userUpdateImage = await User.findOneAndUpdate({ _id: req.user.id }, { image: req.file.filename }, { new: true });
 
-        if (!userUpsateImage) {
+        if (!userUpdateImage) {
             return res.status(400).send({
                 status: "error",
                 message: "Error al Intentar subir archivo multimedia"
@@ -322,7 +322,7 @@ const upload = async (req, res) => {
         return res.status(200).send({
             status: "success",
             message: "Archivo Multimedia subido correctamente",
-            userUpsateImage
+            userUpdateImage
         });
     } catch (error) {
         return res.status(400).send({
@@ -357,7 +357,6 @@ const avatar = async (req, res) => {
         return res.sendFile(path.resolve(filePath));
 
     });
-
 }
 
 
