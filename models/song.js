@@ -1,7 +1,7 @@
 const {Schema, model} = require("mongoose");
 
 const songSchema = Schema({
-    albun: {
+    album: {
         type: Schema.ObjectId,
         ref: "Album"
     },
@@ -19,7 +19,7 @@ const songSchema = Schema({
     },
     file:{
         type: String,
-        required: true
+        default: "default.mp3"
     },
     create_at:{
         type: Date,
