@@ -170,26 +170,41 @@ const update = async (req, res) => {
 }
 
 
-//EDITAR ARTISTAS *************************************************************************
+//ELIMINAR ARTISTAS *************************************************************************
 const remove = async (req, res) => {
     //Recoger id del artista desde la url
-    const id = req.params.id;
+    const artistId = req.params.id;
 
     //consultar y eliminar al artista
     try {
-        const artistRemoved = await Artist.findByIdAndDelete(id);
-        //remove albuns
-        const albumsRemoved = await Album.find({artist: id}).remove();
-        //remove songs
-        const songsRemoved = await Song.find({album: albumsRemoved._id}).remove();
+        //Eliminando elArtista de la BBDD
+        const artistRemoved = await Artist.findByIdAndDelete(artistId);
+
+        //consultando albunes para recorrer cuantos tiene
+        const albumsRemoved = await Album.find({ artist: artistId });
+
+        //recorriendo los albunes del artista
+        albumsRemoved.forEach(async (album) => {
+            //remove songs
+            const deleteFile = await Song.find({ album: album._id });
+            deleteFile.forEach(async (file) => { //eliminando archivos de musica en el servidor
+                const nameFile = file.file;
+                const filePath = "./uploads/songs/" + nameFile;
+                fs.unlinkSync(filePath);  //eliminando archivo
+            });
+
+            //Eliminando los detalles de las canciones
+            const songsRemoved = await Song.deleteMany({album: album._id}); //eliminando canciones
+
+            //Eliminando Albunes del Artista
+            album.deleteOne({artist: artistId}); //eliminando albunes
+        });
 
         //devolver el resultado
         res.status(200).send({
             status: "success",
             message: "Artista eliminado con exito",
-            artistRemoved,
-            albumsRemoved,
-            songsRemoved
+            artistRemoved
         });
     } catch (error) {
         res.status(404).send({
@@ -269,8 +284,8 @@ const image = async (req, res) => {
     const filePath = "./uploads/artists/" + file;
 
     //Comprobar que existe el fichero
-    fs.stat(filePath, (error, exist) =>{
-        if(error || !exist){
+    fs.stat(filePath, (error, exist) => {
+        if (error || !exist) {
             return res.status(400).send({
                 status: "error",
                 message: "Error al intentar buscar el archivo en la BBDD",

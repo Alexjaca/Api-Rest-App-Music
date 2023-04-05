@@ -1,6 +1,10 @@
 //MODELS
 const Song = require("../models/song");
 
+//LIBRERIAS
+const fs = require("fs");
+const path = require("path");
+
 //RUTA DE PRUEBA
 const probando = (req, res) => {
     return res.status(200).send({
@@ -149,6 +153,91 @@ const remove = async(req, res) => {
 }
 
 
+//SUBIDA SONG *******************************************************************************
+const upload = async (req, res) => {
+
+    //configuracion de subida (multer)
+    let songId = req.params.id;
+
+    //recoger fichero de imagen y comprobar si existe
+    if (!req.file) {
+        return res.status(400).send({
+            status: "error",
+            message: "Archivo multimedia vacio, por favor adjunte archivo"
+        });
+    }
+
+    //conseguir el nombre del archivo
+    let nameImage = req.file.originalname;
+
+    //sacar info de la imagen
+    const imageSplit = nameImage.split("\.");
+    const extension = imageSplit[1];
+
+    //Comprobar si la extension es valida
+    if (extension != "mp3" && extension != "ogg") {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).send({
+            status: "error",
+            message: "extension del Archivo Multimedia invalido"
+        });
+    }
+    //si es correcto guardar la imagen en la bbdd
+    try {
+        const songUpdateImage = await Song.findOneAndUpdate({ _id: songId }, { file: req.file.filename }, { new: true });
+        console.log(songUpdateImage);
+        if (!songUpdateImage) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).send({
+                status: "error",
+                message: "Error al Intentar subir archivo multimedia"
+            });
+        }
+
+        //Devolver Resultado
+        return res.status(200).send({
+            status: "success",
+            message: "Archivo Multimedia subido correctamente",
+            song: songUpdateImage,
+            file: req.file
+        });
+    } catch (error) {
+        return res.status(400).send({
+            status: "error",
+            message: "Error al subir multimedia",
+            error
+        });
+    }
+}
+
+
+//SACAR SONG *******************************************************************************
+const audio = async (req, res) => {
+
+    //sacar el parametro de la url
+    const file = req.params.file;
+
+    //Montar el path real de la imagen
+    const filePath = "./uploads/songs/" + file;
+
+    //Comprobar que existe el fichero
+    fs.stat(filePath, (error, exist) =>{
+        if(error || !exist){
+            return res.status(400).send({
+                status: "error",
+                message: "Error al intentar buscar el archivo en la BBDD",
+                error
+            });
+        }
+
+        //Devolvemo el archivo
+        return res.sendFile(path.resolve(filePath));
+
+    });
+}
+
+
+
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
 module.exports = {
     probando,
@@ -156,5 +245,7 @@ module.exports = {
     one,
     list,
     update,
-    remove
+    remove,
+    upload,
+    audio
 }

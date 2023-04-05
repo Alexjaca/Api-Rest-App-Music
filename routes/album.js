@@ -33,6 +33,7 @@ router.get("/list/:artistId", authorization.auth, albumController.list);
 router.put("/update/:albumId", authorization.auth, albumController.update);
 router.post("/upload/:id", [authorization.auth, uploads.single("file0")], albumController.upload);
 router.get("/image/:file", albumController.image);
+router.delete("/remove/:id", authorization.auth, albumController.remove);
 
 
 //EXPORTAR ROUTER

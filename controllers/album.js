@@ -1,6 +1,7 @@
 //MODELS
 const Album = require("../models/album");
 const Artist = require("../models/artist");
+const Song = require("../models/song");
 
 //IMPORTAR DEPENDENCIAS
 const fs = require("fs");
@@ -105,7 +106,7 @@ const list = async (req, res) => {
 
 
 //ACTUALIZAR ALBUMS**********************************************************
-const update = async(req, res) => {
+const update = async (req, res) => {
     //recoger paramas por la url
     const albumId = req.params.albumId;
 
@@ -198,8 +199,8 @@ const image = async (req, res) => {
     const filePath = "./uploads/albums/" + file;
 
     //Comprobar que existe el fichero
-    fs.stat(filePath, (error, exist) =>{
-        if(error || !exist){
+    fs.stat(filePath, (error, exist) => {
+        if (error || !exist) {
             return res.status(400).send({
                 status: "error",
                 message: "Error al intentar buscar el archivo en la BBDD",
@@ -214,6 +215,51 @@ const image = async (req, res) => {
 }
 
 
+//ELIMINAR ALBUMS *************************************************************************
+const remove = async (req, res) => {
+    //Recoger id del artista desde la url
+    const albumId = req.params.id;
+
+    //consultar y eliminar al artista
+    try {
+
+        //consultando albun para recorrer cuantos tiene
+        const albumsRemoved = await Album.findById(albumId).populate("artist");
+
+        //consultando todas las canciones del album 
+        const songsRemoved = await Song.find({ album: albumId });
+
+        songsRemoved.forEach(async (file) => { //eliminando archivos de musica en el servidor
+            const nameFile = file.file;
+            console.log(nameFile);
+            const filePath = "./uploads/songs/" + nameFile;
+            fs.unlinkSync(filePath);  //eliminando archivo
+        });
+
+        //Eliminando los detalles de las canciones
+        await Song.deleteMany({ album: albumId }); //eliminando canciones
+
+        //Eliminando Albunes del Artista
+        await albumsRemoved.deleteOne({ _id: albumId }); //eliminando albunes
+
+
+        //devolver el resultado
+        res.status(200).send({
+            status: "success",
+            message: "Album eliminado con exito",
+            AlbunDeleted: albumsRemoved,
+            SongsDeleted: songsRemoved
+        });
+    } catch (error) {
+        res.status(404).send({
+            status: "error",
+            message: "Error al intentar eliminar el artista",
+            error
+        });
+    }
+}
+
+
 //EXPORTANDO LAS FUNCIONES DEL CONTROLADOR
 module.exports = {
     probando,
@@ -222,5 +268,6 @@ module.exports = {
     list,
     update,
     upload,
-    image
+    image,
+    remove
 }
